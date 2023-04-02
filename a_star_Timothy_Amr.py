@@ -31,14 +31,14 @@ PARENT_COORDINATES = 4
 COORDINATES = 5
 
 
-Open_List = []
-Closed_List = []  # {"C2G", "C2C", "TC", "node_index", "parent_coor", "node_coor"}
-Closed_Coor = set()
+Open_List = []    # used to track all the open nodes
+Closed_List = []  # {"C2G", "C2C", "TC", "node_index", "parent_coor", "node_coor"} # used to track the closed node
+Closed_Coor = set()   # closed coordinates. Used to quickly check if a coordinate is closed
 threshold_coor = set()
-node_index = 0
-obstacle_points = set()
-map_points = set()
+obstacle_points = set()  # used to quickly look up if a point is in an obstacle
+map_points = set()       # used to quickly look up if a point is in the map
 
+node_index = 0
 
 
 def draw_map():
@@ -184,7 +184,6 @@ def point_in_goal(x, y):
 
 
 #function to calculate the cost to go to from the point to the goal in a straight line
-
 def C2G_func (n_position, g_position): 
     C2G = round(((g_position[0]-n_position[0])**2 + (g_position[1]-n_position[1])**2)**0.5, 1)
     return C2G
@@ -313,7 +312,8 @@ def exploreNodes():
                         checkC2C(copy.deepcopy(popped_node), new_node)
         return Open_List, Closed_Coor, Closed_List
     
-#threshhold function that checks if the newly created point falls within the already explored points, angle must be the same. point can have multiple different angle
+#threshhold function that checks if the newly created point falls within the already explored points,
+# angle must be the same. point can have multiple different angle
 def threshhold(nx, ny, nt):
     if (nx, ny, nt) in threshold_coor: 
         return True
@@ -328,7 +328,8 @@ def threshhold(nx, ny, nt):
         threshold_coor.add((nx, ny-0.5, nt))
         return threshold_coor, False
 
-#check if newly explored point has been explored previously, if so compare C2C and update if the new C2C is lower than the one originally stored
+#check if newly explored point has been explored previously, if so compare C2C and update if the new C2C is
+# lower than the one originally stored
 def checkC2C (on, n):
     global node_index
     node_index += 1
@@ -340,7 +341,7 @@ def checkC2C (on, n):
 #function to check the status of the popped node, if it matches the goal coordinates it starts the backtracking function
 def check_popped_status (n):
     global goal_found
-    if point_in_goal(n[5][0], n[5][1]) and n[5][2] == goal_position[2]:
+    if point_in_goal(n[5][0], n[5][1]):
         goal_node = {"C2G": n[0], "C2C": n[1], "TC": n[2], "node_index": n[3], "parent_coor": n[4], "node_coor": n[5]}
         Closed_List.append(goal_node)
         print("goal node position:", n[5])
@@ -352,15 +353,6 @@ def check_popped_status (n):
     else: 
         return(n)
 
-#plotting function
-def plot_function(path):
-    closed_nodes = [node['node_coor'] for node in Closed_List]
-    # plot_closed_nodes()
-    # path_nodes = [node['node_coor'] for node in path]
-    x_coords, y_coords = zip(*path)
-    plt.scatter(*zip(*closed_nodes), marker='o', color='green', alpha=.1)
-    plt.scatter(x_coords, y_coords, marker='o', color='black', alpha=1)
-    # plt.plot(*zip(*path_nodes), color='black')
 
 #backtracking function that takes in the last closed node from the closed list and runs a loop using
 #  the node coordinates and the parent coordinate to trace back the steps leading to the start position
@@ -430,19 +422,28 @@ if __name__ == '__main__':
 
 
     # user input required to fill out the following
+
     start_x_position = int(input("enter start X position(0-600): "))
     start_y_position = int(input("enter start Y position(0-250): "))
     start_theta_position = int(input("enter start theta position(0-360): "))
     print()
     goal_x_position = int(input("enter goal X position(0-600): "))
     goal_y_position = int(input("enter goal y position(0-250): "))
-    goal_theta_position = int(input("enter goal theta position(0-360): "))
     print()
     ROBOT_SIZE = int(input("enter robot size (0-10): "))
     step_size = int(input("enter step size (0-10): "))
+    """
+    start_x_position  = 25
+    start_y_position  = 25
+    start_theta_position  = 0
+    goal_x_position  = 575
+    goal_y_position  = 225
+    ROBOT_SIZE = 5
+    step_size = 8
+    """
 
     start_position = (start_x_position, start_y_position, start_theta_position)
-    goal_position = (goal_x_position, goal_y_position, goal_theta_position)
+    goal_position = (goal_x_position, goal_y_position)
 
     clearance = 5
     thresh = 0.5

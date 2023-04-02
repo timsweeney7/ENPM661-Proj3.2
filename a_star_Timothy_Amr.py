@@ -420,32 +420,42 @@ def run_visualization(path_coordinates):
 
 if __name__ == '__main__':
 
+    DEBUG = True
 
     # user input required to fill out the following
+    if DEBUG == False:
+        start_x_position = int(input("enter start X position(0-600): "))
+        start_y_position = int(input("enter start Y position(0-250): "))
+        start_theta_position = int(input("enter start theta position(0-360): "))
+        print()
+        goal_x_position = int(input("enter goal X position(0-600): "))
+        goal_y_position = int(input("enter goal y position(0-250): "))
+        print()
+        RPM_1 = int(input("enter RPM for wheel rotation speed 1 (0-100): "))
+        RPM_2 = int(input("enter RPM for wheel rotation speed 2 (0-100): "))
+        print()
+        step_size = int(input("enter step size (0-10): "))
+        clearance = int(input("enter the clearance used for navigation (in mm): "))
+        ROBOT_SIZE = 5 + clearance
+    else:
+        start_x_position  = 25
+        start_y_position  = 25
+        start_theta_position  = 0
+        goal_x_position  = 575
+        goal_y_position  = 225
+        RPM_1 = 50
+        RPM_2 = 100
+        step_size = 8
+        #ROBOT_SIZE = 105  # (mm) 105 is the size if the robot in mm.  Will not work for this simulation
+        clearance = 2
+        ROBOT_SIZE = 5 + clearance
 
-    start_x_position = int(input("enter start X position(0-600): "))
-    start_y_position = int(input("enter start Y position(0-250): "))
-    start_theta_position = int(input("enter start theta position(0-360): "))
-    print()
-    goal_x_position = int(input("enter goal X position(0-600): "))
-    goal_y_position = int(input("enter goal y position(0-250): "))
-    print()
-    ROBOT_SIZE = int(input("enter robot size (0-10): "))
-    step_size = int(input("enter step size (0-10): "))
-    """
-    start_x_position  = 25
-    start_y_position  = 25
-    start_theta_position  = 0
-    goal_x_position  = 575
-    goal_y_position  = 225
-    ROBOT_SIZE = 5
-    step_size = 8
-    """
+
+
 
     start_position = (start_x_position, start_y_position, start_theta_position)
     goal_position = (goal_x_position, goal_y_position)
 
-    clearance = 5
     thresh = 0.5
 
     # initial values for the start node
@@ -471,7 +481,6 @@ if __name__ == '__main__':
                 map_points.add((x, y))
             else:
                 obstacle_points.add((x, y))
-    test = len(map_points)+len(obstacle_points)
 
     if (start_position[0], start_position[1]) in obstacle_points:
         print("start point selected is in obstacle space, try again")

@@ -23,12 +23,19 @@ X = 0
 Y = 1
 
 # map dimensions
-X_MAX = 600
-Y_MAX = 250
+X_MAX = 600 * SCALE_FACTOR
+Y_MAX = 200 * SCALE_FACTOR
 
 # used accessing node information
 PARENT_COORDINATES = 4
 COORDINATES = 5
+
+# the turtlebot is 10.5 cm. 
+# in an unscaled simulation, 1 pixel represents a 1cm x 1cm square
+# mutliply ROBOT_SIZE by SCALE_FACTOR to determine pixel representation of robot
+ROBOT_SIZE = 10.5 
+ROBOT_SIZE = ROBOT_SIZE * SCALE_FACTOR
+ROBOT_SIZE = math.ceil(ROBOT_SIZE)
 
 
 Open_List = []    # used to track all the open nodes
@@ -41,93 +48,78 @@ map_points = set()       # used to quickly look up if a point is in the map
 node_index = 0
 
 
+"""
+draw_map()  
+
+creates a (200 * SCALE_FACTOR) * (600 * SCALE_FACTOR) numpy array that represents the world map
+the map represents a 2 meter by 6 meter world
+using a SCALE_FACTOR of 2, each pixel represents a 50mm x 50mm square in the world
+"""
 def draw_map():
     # Background
     background_color = BLACK
-    map = np.zeros((250*SCALE_FACTOR, 600*SCALE_FACTOR, 3), np.uint8)
+    map = np.zeros((Y_MAX, X_MAX, 3), np.uint8)
     map[:] = background_color
 
     # Map boarder
-    map[0:ROBOT_SIZE*SCALE_FACTOR, :] = YELLOW                                    # north edge
-    map[(Y_MAX - ROBOT_SIZE) * SCALE_FACTOR: Y_MAX * SCALE_FACTOR, :] = YELLOW    # south edge
-    map[:, 0:ROBOT_SIZE * SCALE_FACTOR] = YELLOW                                   # east edge
-    map[:, (X_MAX - ROBOT_SIZE) * SCALE_FACTOR: X_MAX * SCALE_FACTOR] = YELLOW      # west edge
+    map[0:ROBOT_SIZE                , :                             ] = YELLOW    # north edge
+    map[(Y_MAX - ROBOT_SIZE): Y_MAX , :                             ] = YELLOW    # south edge
+    map[:                           , 0:ROBOT_SIZE                  ] = YELLOW    # east edge
+    map[:                           , (X_MAX - ROBOT_SIZE) : X_MAX  ] = YELLOW    # west edge
 
     # box 1 boundary
-    pts = np.array([[(100 - ROBOT_SIZE) * SCALE_FACTOR, 0 * SCALE_FACTOR],
-                    [(150 + ROBOT_SIZE) * SCALE_FACTOR, 0 * SCALE_FACTOR],
-                    [(150 + ROBOT_SIZE) * SCALE_FACTOR, (100 + ROBOT_SIZE) * SCALE_FACTOR],
-                    [(100 - ROBOT_SIZE) * SCALE_FACTOR, (100 + ROBOT_SIZE) * SCALE_FACTOR]],
+    pts = np.array([[150 * SCALE_FACTOR - ROBOT_SIZE, 0 * SCALE_FACTOR],
+                    [150 * SCALE_FACTOR - ROBOT_SIZE, 125 * SCALE_FACTOR + ROBOT_SIZE],
+                    [165 * SCALE_FACTOR + ROBOT_SIZE, 125 * SCALE_FACTOR + ROBOT_SIZE],
+                    [165 * SCALE_FACTOR + ROBOT_SIZE, 0 * SCALE_FACTOR]],
                    np.int32)
     cv.fillPoly(map, [pts], YELLOW)
 
     # box 1
-    pts = np.array([[100 * SCALE_FACTOR, 0 * SCALE_FACTOR],
-                    [150 * SCALE_FACTOR, 0 * SCALE_FACTOR],
-                    [150 * SCALE_FACTOR, 100 * SCALE_FACTOR],
-                    [100 * SCALE_FACTOR, 100 * SCALE_FACTOR]],
+    pts = np.array([[150 * SCALE_FACTOR, 0 * SCALE_FACTOR],
+                    [150 * SCALE_FACTOR, 125 * SCALE_FACTOR],
+                    [165 * SCALE_FACTOR, 125 * SCALE_FACTOR],
+                    [165 * SCALE_FACTOR, 0 * SCALE_FACTOR]],
                    np.int32)
     cv.fillPoly(map, [pts], BLUE)
 
-    # box 2  boundary
-    pts = np.array([[(100 - ROBOT_SIZE) * SCALE_FACTOR, (150 - ROBOT_SIZE) * SCALE_FACTOR],
-                    [(150 + ROBOT_SIZE) * SCALE_FACTOR, (150 - ROBOT_SIZE) * SCALE_FACTOR],
-                    [(150 + ROBOT_SIZE) * SCALE_FACTOR, 250 * SCALE_FACTOR],
-                    [(100 - ROBOT_SIZE) * SCALE_FACTOR, 250 * SCALE_FACTOR]],
+    # box 2 boundary
+    pts = np.array([[250 * SCALE_FACTOR - ROBOT_SIZE, 200 * SCALE_FACTOR],
+                    [250 * SCALE_FACTOR - ROBOT_SIZE, 75 * SCALE_FACTOR - ROBOT_SIZE],
+                    [265 * SCALE_FACTOR + ROBOT_SIZE, 75 * SCALE_FACTOR - ROBOT_SIZE],
+                    [265 * SCALE_FACTOR + ROBOT_SIZE, 200 * SCALE_FACTOR]],
                    np.int32)
     cv.fillPoly(map, [pts], YELLOW)
 
     # box 2
-    pts = np.array([[100*SCALE_FACTOR, 150*SCALE_FACTOR],
-                    [150*SCALE_FACTOR, 150*SCALE_FACTOR],
-                    [150*SCALE_FACTOR, 250*SCALE_FACTOR],
-                    [100*SCALE_FACTOR, 250*SCALE_FACTOR]],
+    pts = np.array([[250 * SCALE_FACTOR, 200 * SCALE_FACTOR],
+                    [250 * SCALE_FACTOR, 75 * SCALE_FACTOR],
+                    [265 * SCALE_FACTOR, 75 * SCALE_FACTOR],
+                    [265 * SCALE_FACTOR, 200 * SCALE_FACTOR]],
                    np.int32)
     cv.fillPoly(map, [pts], BLUE)
 
-    # hexagon boundry
-    pts = np.array([[300*SCALE_FACTOR, (50 - ROBOT_SIZE) * SCALE_FACTOR],  # 1
-                    [(365+ROBOT_SIZE)*SCALE_FACTOR, (87 - ROBOT_SIZE*tan(deg2rad(30)))*SCALE_FACTOR],  # 2
-                    [(365+ROBOT_SIZE)*SCALE_FACTOR, (161 + ROBOT_SIZE*tan(deg2rad(30)))*SCALE_FACTOR],
-                    [300*SCALE_FACTOR, (200 + ROBOT_SIZE) * SCALE_FACTOR],
-                    [(235-ROBOT_SIZE)*SCALE_FACTOR, (161 + ROBOT_SIZE*tan(deg2rad(30)))*SCALE_FACTOR],
-                    [(235-ROBOT_SIZE)*SCALE_FACTOR, (87 - ROBOT_SIZE*tan(deg2rad(30)))*SCALE_FACTOR]],  # 6
-                   np.int32)
-    cv.fillPoly(map, [pts], YELLOW)
+    # circle boundry
+    cv.circle(map, (400 * SCALE_FACTOR, 90 * SCALE_FACTOR), 50 * SCALE_FACTOR + ROBOT_SIZE, YELLOW, -1)
 
-    # hexagon
-    pts = np.array([[300*SCALE_FACTOR, 50*SCALE_FACTOR],
-                    [365*SCALE_FACTOR, 87*SCALE_FACTOR],
-                    [365*SCALE_FACTOR, 161*SCALE_FACTOR],
-                    [300*SCALE_FACTOR, 200*SCALE_FACTOR],
-                    [235*SCALE_FACTOR, 161*SCALE_FACTOR],
-                    [235*SCALE_FACTOR, 87*SCALE_FACTOR]],
-                   np.int32)
-    cv.fillPoly(map, [pts], BLUE)
-
-    # triangle boundry
-    pts = np.array([[(460-ROBOT_SIZE)*SCALE_FACTOR, (25-ROBOT_SIZE)*SCALE_FACTOR],
-                    [(460+ROBOT_SIZE)*SCALE_FACTOR, (25-ROBOT_SIZE)*SCALE_FACTOR],
-                    [(510+ROBOT_SIZE)*SCALE_FACTOR, 125*SCALE_FACTOR],
-                    [(460+ROBOT_SIZE)*SCALE_FACTOR, (225+ROBOT_SIZE)*SCALE_FACTOR],
-                    [(460-ROBOT_SIZE)*SCALE_FACTOR, (225+ROBOT_SIZE)*SCALE_FACTOR]],
-                   np.int32)
-    cv.fillPoly(map, [pts], YELLOW)
-
-    # triangle
-    pts = np.array([[460*SCALE_FACTOR, 25*SCALE_FACTOR],
-                    [510*SCALE_FACTOR, 125*SCALE_FACTOR],
-                    [460*SCALE_FACTOR, 225*SCALE_FACTOR]],
-                   np.int32)
-    cv.fillPoly(map, [pts], BLUE)
+    # circle
+    cv.circle(map, (400 * SCALE_FACTOR, 90 * SCALE_FACTOR), 50 * SCALE_FACTOR, BLUE, -1)
 
     return map
 
 
+"""
+get_valid_point_map()
+
+input: np array representing the world map.  array values are the colors on the map
+output: np array of 1s and 0s representing if a point is valid to be traveled in.
+
+Function works by checking the color of pixel and determinining if that color is valid or invalid
+"""
 def get_valid_point_map(color_map):
-    valid_point_map = np.ones((250 * SCALE_FACTOR, 600 * SCALE_FACTOR), np.uint8)
-    for x in range(0, 600 * SCALE_FACTOR):
-        for y in range(0, 250 * SCALE_FACTOR):
+    valid_point_map = np.ones((Y_MAX, X_MAX), np.uint8)
+    for x in range(0, X_MAX):
+        for y in range(0, Y_MAX):
             pixel_color = tuple(color_map[y, x])
             if pixel_color == YELLOW or pixel_color == BLUE:
                 valid_point_map[y, x] = 0
@@ -144,9 +136,9 @@ def determine_valid_point(valid_point_map, coordinates):
 
 
 def __point_is_inside_map(x, y):
-    if (x > 600) or (x < 0):
+    if (x > X_MAX / SCALE_FACTOR) or (x < 0):
         return False
-    elif (y > 250) or (y < 0):
+    elif (y > Y_MAX / SCALE_FACTOR) or (y < 0):
         return False
     else:
         return True
@@ -436,19 +428,19 @@ if __name__ == '__main__':
         print()
         step_size = int(input("enter step size (0-10): "))
         clearance = int(input("enter the clearance used for navigation (in mm): "))
-        ROBOT_SIZE = 5 + clearance
+        ROBOT_SIZE = ROBOT_SIZE + clearance
     else:
         start_x_position  = 25
         start_y_position  = 25
         start_theta_position  = 0
         goal_x_position  = 575
-        goal_y_position  = 225
+        goal_y_position  = 175
         RPM_1 = 50
         RPM_2 = 100
         step_size = 8
         #ROBOT_SIZE = 105  # (mm) 105 is the size if the robot in mm.  Will not work for this simulation
         clearance = 2
-        ROBOT_SIZE = 5 + clearance
+        ROBOT_SIZE = ROBOT_SIZE + clearance
 
 
 
@@ -474,9 +466,9 @@ if __name__ == '__main__':
     # creat 2 sets, 1 containing all the possible points within map, 1 containg all possible points within the obstacle spaces
     # this will be used later to check the created points to see if they can be used
     x_range = np.arange(0, 600, 0.5)
-    y_range = np.arange(0, 250, 0.5)
+    y_range = np.arange(0, 200, 0.5)
     for x in np.arange(0, 600, 0.5):
-        for y in np.arange(0, 250, 0.5):
+        for y in np.arange(0, 200, 0.5):
             if valid_point_map[int(y * SCALE_FACTOR), int(x * SCALE_FACTOR)] == 1:
                 map_points.add((x, y))
             else:

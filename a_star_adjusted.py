@@ -237,49 +237,49 @@ def exploreNodes():
             if ((new_node[5][0], new_node[5][1])) not in obstacle_points:
                 if ((new_node[5][0], new_node[5][1])) not in Closed_Coor:
                     if threshhold(new_node[5][0], new_node[5][1]):
-                        checkC2C(copy.deepcopy(popped_node), new_node)
+                        checkTC(copy.deepcopy(popped_node), new_node)
         new_node = explore(copy.deepcopy(popped_node), actions[1][0], actions[1][1])
         if ((new_node[5][0], new_node[5][1])) in map_points: 
             if ((new_node[5][0], new_node[5][1])) not in obstacle_points:
                 if ((new_node[5][0], new_node[5][1])) not in Closed_Coor:
                     if threshhold(new_node[5][0], new_node[5][1]):
-                        checkC2C(copy.deepcopy(popped_node), new_node)
+                        checkTC(copy.deepcopy(popped_node), new_node)
         new_node = explore(copy.deepcopy(popped_node), actions[2][0], actions[2][1])
         if ((new_node[5][0], new_node[5][1])) in map_points: 
             if ((new_node[5][0], new_node[5][1])) not in obstacle_points:
                 if ((new_node[5][0], new_node[5][1])) not in Closed_Coor:
                     if threshhold(new_node[5][0], new_node[5][1]):
-                        checkC2C(copy.deepcopy(popped_node), new_node)
+                        checkTC(copy.deepcopy(popped_node), new_node)
         new_node = explore(copy.deepcopy(popped_node), actions[3][0], actions[3][1])
         if ((new_node[5][0], new_node[5][1])) in map_points: 
             if ((new_node[5][0], new_node[5][1])) not in obstacle_points:
                 if ((new_node[5][0], new_node[5][1])) not in Closed_Coor:
                     if threshhold(new_node[5][0], new_node[5][1]):
-                        checkC2C(copy.deepcopy(popped_node), new_node)
+                        checkTC(copy.deepcopy(popped_node), new_node)
         new_node = explore(copy.deepcopy(popped_node), actions[4][0], actions[4][1])
         if ((new_node[5][0], new_node[5][1])) in map_points: 
             if ((new_node[5][0], new_node[5][1])) not in obstacle_points:
                 if ((new_node[5][0], new_node[5][1])) not in Closed_Coor:
                     if threshhold(new_node[5][0], new_node[5][1]):
-                        checkC2C(copy.deepcopy(popped_node), new_node)
+                        checkTC(copy.deepcopy(popped_node), new_node)
         new_node = explore(copy.deepcopy(popped_node), actions[5][0], actions[5][1])
         if ((new_node[5][0], new_node[5][1])) in map_points: 
             if ((new_node[5][0], new_node[5][1])) not in obstacle_points:
                 if ((new_node[5][0], new_node[5][1])) not in Closed_Coor:
                     if threshhold(new_node[5][0], new_node[5][1]):
-                        checkC2C(copy.deepcopy(popped_node), new_node)
+                        checkTC(copy.deepcopy(popped_node), new_node)
         new_node = explore(copy.deepcopy(popped_node), actions[6][0], actions[6][1])
         if ((new_node[5][0], new_node[5][1])) in map_points: 
             if ((new_node[5][0], new_node[5][1])) not in obstacle_points:
                 if ((new_node[5][0], new_node[5][1])) not in Closed_Coor:
                     if threshhold(new_node[5][0], new_node[5][1]):
-                        checkC2C(copy.deepcopy(popped_node), new_node)
+                        checkTC(copy.deepcopy(popped_node), new_node)
         new_node = explore(copy.deepcopy(popped_node), actions[7][0], actions[7][1])
         if ((new_node[5][0], new_node[5][1])) in map_points: 
             if ((new_node[5][0], new_node[5][1])) not in obstacle_points:
                 if ((new_node[5][0], new_node[5][1])) not in Closed_Coor:
                     if threshhold(new_node[5][0], new_node[5][1]):
-                        checkC2C(copy.deepcopy(popped_node), new_node)
+                        checkTC(copy.deepcopy(popped_node), new_node)
         # print("OpenList:", Open_List)
         return Open_List, Closed_Coor, Closed_List
     
@@ -301,7 +301,7 @@ def threshhold(nx, ny):
 
 #check if newly explored point has been explored previously, if so compare C2C and update if the new C2C is
 # lower than the one originally stored
-def checkC2C (on, n):
+def checkTC (on, n):
     global node_index
     for i, nodes in enumerate(Open_List):
         if (nodes[5][0],nodes[5][1]) == (n[5][0],n[5][1]):

@@ -21,10 +21,13 @@ GRAY = (199, 198, 195)
 # for coordinates
 X = 0
 Y = 1
+THETA = 2
 
 # map dimensions
-X_MAX = 600 * SCALE_FACTOR
-Y_MAX = 200 * SCALE_FACTOR
+X_MAX = 600
+Y_MAX = 200
+X_MAX_SCALED = X_MAX * SCALE_FACTOR
+Y_MAX_SCALED = Y_MAX * SCALE_FACTOR
 
 # used accessing node information
 PARENT_COORDINATES = 4
@@ -34,8 +37,8 @@ COORDINATES = 5
 # in an unscaled simulation, 1 pixel represents a 1cm x 1cm square
 # mutliply ROBOT_SIZE by SCALE_FACTOR to determine pixel representation of robot
 ROBOT_SIZE = 10.5 
-ROBOT_SIZE = ROBOT_SIZE * SCALE_FACTOR
-ROBOT_SIZE = math.ceil(ROBOT_SIZE)
+ROBOT_SIZE_SCALED = ROBOT_SIZE * SCALE_FACTOR
+ROBOT_SIZE_SCALED = math.ceil(ROBOT_SIZE)
 
 
 Open_List = []    # used to track all the open nodes
@@ -57,20 +60,20 @@ using a SCALE_FACTOR of 2, each pixel represents a 50mm x 50mm square in the wor
 def draw_map():
     # Background
     background_color = BLACK
-    map = np.zeros((Y_MAX, X_MAX, 3), np.uint8)
+    map = np.zeros((Y_MAX_SCALED, X_MAX_SCALED, 3), np.uint8)
     map[:] = background_color
 
     # Map boarder
-    map[0:ROBOT_SIZE                , :                             ] = YELLOW    # north edge
-    map[(Y_MAX - ROBOT_SIZE): Y_MAX , :                             ] = YELLOW    # south edge
-    map[:                           , 0:ROBOT_SIZE                  ] = YELLOW    # east edge
-    map[:                           , (X_MAX - ROBOT_SIZE) : X_MAX  ] = YELLOW    # west edge
+    map[0:ROBOT_SIZE_SCALED                             , :                                                 ] = YELLOW    # north edge
+    map[(Y_MAX_SCALED - ROBOT_SIZE_SCALED) : Y_MAX_SCALED  , :                                                 ] = YELLOW    # south edge
+    map[:                                               , 0:ROBOT_SIZE_SCALED                               ] = YELLOW    # east edge
+    map[:                                               , (X_MAX_SCALED - ROBOT_SIZE_SCALED) : X_MAX_SCALED ] = YELLOW    # west edge
 
     # box 1 boundary
-    pts = np.array([[150 * SCALE_FACTOR - ROBOT_SIZE, 0 * SCALE_FACTOR],
-                    [150 * SCALE_FACTOR - ROBOT_SIZE, 125 * SCALE_FACTOR + ROBOT_SIZE],
-                    [165 * SCALE_FACTOR + ROBOT_SIZE, 125 * SCALE_FACTOR + ROBOT_SIZE],
-                    [165 * SCALE_FACTOR + ROBOT_SIZE, 0 * SCALE_FACTOR]],
+    pts = np.array([[150 * SCALE_FACTOR - ROBOT_SIZE_SCALED, 0 * SCALE_FACTOR],
+                    [150 * SCALE_FACTOR - ROBOT_SIZE_SCALED, 125 * SCALE_FACTOR + ROBOT_SIZE_SCALED],
+                    [165 * SCALE_FACTOR + ROBOT_SIZE_SCALED, 125 * SCALE_FACTOR + ROBOT_SIZE_SCALED],
+                    [165 * SCALE_FACTOR + ROBOT_SIZE_SCALED, 0 * SCALE_FACTOR]],
                    np.int32)
     cv.fillPoly(map, [pts], YELLOW)
 
@@ -83,10 +86,10 @@ def draw_map():
     cv.fillPoly(map, [pts], BLUE)
 
     # box 2 boundary
-    pts = np.array([[250 * SCALE_FACTOR - ROBOT_SIZE, 200 * SCALE_FACTOR],
-                    [250 * SCALE_FACTOR - ROBOT_SIZE, 75 * SCALE_FACTOR - ROBOT_SIZE],
-                    [265 * SCALE_FACTOR + ROBOT_SIZE, 75 * SCALE_FACTOR - ROBOT_SIZE],
-                    [265 * SCALE_FACTOR + ROBOT_SIZE, 200 * SCALE_FACTOR]],
+    pts = np.array([[250 * SCALE_FACTOR - ROBOT_SIZE_SCALED, 200 * SCALE_FACTOR],
+                    [250 * SCALE_FACTOR - ROBOT_SIZE_SCALED, 75 * SCALE_FACTOR - ROBOT_SIZE_SCALED],
+                    [265 * SCALE_FACTOR + ROBOT_SIZE_SCALED, 75 * SCALE_FACTOR - ROBOT_SIZE_SCALED],
+                    [265 * SCALE_FACTOR + ROBOT_SIZE_SCALED, 200 * SCALE_FACTOR]],
                    np.int32)
     cv.fillPoly(map, [pts], YELLOW)
 
@@ -99,7 +102,7 @@ def draw_map():
     cv.fillPoly(map, [pts], BLUE)
 
     # circle boundry
-    cv.circle(map, (400 * SCALE_FACTOR, 90 * SCALE_FACTOR), 50 * SCALE_FACTOR + ROBOT_SIZE, YELLOW, -1)
+    cv.circle(map, (400 * SCALE_FACTOR, 90 * SCALE_FACTOR), 50 * SCALE_FACTOR + ROBOT_SIZE_SCALED, YELLOW, -1)
 
     # circle
     cv.circle(map, (400 * SCALE_FACTOR, 90 * SCALE_FACTOR), 50 * SCALE_FACTOR, BLUE, -1)
@@ -114,9 +117,9 @@ output: np array of 1s and 0s representing if a point is valid to be traveled in
 Function works by checking the color of pixel and determinining if that color is valid or invalid
 """
 def get_valid_point_map(color_map):
-    valid_point_map = np.ones((Y_MAX, X_MAX), np.uint8)
-    for x in range(0, X_MAX):
-        for y in range(0, Y_MAX):
+    valid_point_map = np.ones((Y_MAX_SCALED, X_MAX_SCALED), np.uint8)
+    for x in range(0, X_MAX_SCALED):
+        for y in range(0, Y_MAX_SCALED):
             pixel_color = tuple(color_map[y, x])
             if pixel_color == YELLOW or pixel_color == BLUE:
                 valid_point_map[y, x] = 0
@@ -133,9 +136,9 @@ def determine_valid_point(valid_point_map, coordinates):
 
 
 def __point_is_inside_map(x, y):
-    if (x > X_MAX / SCALE_FACTOR) or (x < 0):
+    if (x > X_MAX) or (x < 0):
         return False
-    elif (y > Y_MAX / SCALE_FACTOR) or (y < 0):
+    elif (y > Y_MAX) or (y < 0):
         return False
     else:
         return True
@@ -166,7 +169,7 @@ def draw_node(child_coordinates, parent_coordinates, map, color):
 # takes in the size of the robot as the threshhold for the target
 def point_in_goal(x, y):
     distance = math.sqrt((x-goal_position[0])**2 + (y-goal_position[1])**2)
-    if distance <= ROBOT_SIZE:
+    if distance <= ROBOT_SIZE_SCALED:
         return True
     else:
         return False
@@ -177,34 +180,24 @@ def C2G_func (n_position, g_position):
     C2G = round(((g_position[0]-n_position[0])**2 + (g_position[1]-n_position[1])**2)**0.5, 1)
     return C2G
 
-RPM_1 = 10
-RPM_2 = 20
-r = 1
-L = 4
-dt = .5
-
-actions = [[RPM_1, 0], [RPM_1, RPM_1], [0, RPM_1], [RPM_2, 0], [RPM_2, RPM_2], [0, RPM_2], [RPM_1, RPM_2], [RPM_2, RPM_1]]
-
 def explore(n,UL,UR):
     t = 0
     D=0
     Xn=n[5][0]
     Yn=n[5][1]
     Thetan = 3.14 * n[5][2] / 180
-# Xi, Yi,Thetai: Input point's coordinates
-# Xs, Ys: Start point coordinates for plot function
-# Xn, Yn, Thetan: End point coordintes
+    # Xi, Yi,Thetai: Input point's coordinates
+    # Xs, Ys: Start point coordinates for plot function
+    # Xn, Yn, Thetan: End point coordintes
     while t<1:
-        Xs = Xn
-        Ys = Yn
-        Thetan += (r / L) * (UR - UL) * dt
-        Xn += round(((0.5*r * (UL + UR) * math.cos(Thetan) * dt)/2)*2)
-        Yn += round(((0.5*r * (UL + UR) * math.sin(Thetan) * dt)/2)*2)
-        # plt.plot([Xs, Xn], [Ys, Yn], color="blue")
         t = t + dt
+        Xn += round(0.5*r * (UL + UR) * math.cos(Thetan) * dt)
+        Yn += round(0.5*r * (UL + UR) * math.sin(Thetan) * dt)
+        Thetan += (r / L) * (UR - UL) * dt
     
     Thetan = (180 * (Thetan) / 3.14) %360
-    new_position = round(Xn,2), round(Yn,2), round(Thetan,2)
+    new_position = Xn, Yn, Thetan
+    # what is "D"?
     D=round(D+ math.sqrt(math.pow((0.5*r * (UL + UR) * math.cos(Thetan) * dt),2)+math.pow((0.5*r * (UL + UR) * math.sin(Thetan) * dt),2)), 2)
     new_C2C = n[1]+D
     new_C2G = C2G_func(new_position, goal_position)
@@ -224,14 +217,14 @@ def exploreNodes():
         popped_node = hq.heappop(Open_List)
         Closed_Coor.add((popped_node[5][0], popped_node[5][1]))
 
-#popped node is checked and added to the closed list as a dic
+        #popped node is checked and added to the closed list as a dic
         check_popped_status(popped_node)
         popped_node_dic = {"TC": popped_node[0], "C2C": popped_node[1], "C2G": popped_node[2], "node_index": popped_node[3], "parent_coor": popped_node[4], "node_coor": popped_node[5]}
         Closed_List.append(popped_node_dic)
-        # print("Closed List:", Closed_List)
 
-#checks if the newly created node falls within the defined map points, outside the obstacles, has not been closed already and its not within the threshhold of other points
-#when all pass, it adds it to the open list 
+        # checks if the newly created node falls within the defined map points, outside the obstacles, 
+        # has not been closed already and its not within the threshhold of other points
+        # when all pass, it adds it to the open list 
         new_node = explore(copy.deepcopy(popped_node), actions[0][0], actions[0][1])
         if ((new_node[5][0], new_node[5][1])) in map_points:
             if ((new_node[5][0], new_node[5][1])) not in obstacle_points:
@@ -303,7 +296,7 @@ def threshhold(nx, ny):
 # lower than the one originally stored
 def checkTC (on, n):
     global node_index
-    for i, nodes in enumerate(Open_List):
+    for i, nodes in enumerate(Open_List): 
         if (nodes[5][0],nodes[5][1]) == (n[5][0],n[5][1]):
             if n[0] < nodes[0]:
                 new_node = (n[0], n[1], n[2], nodes[1], n[4], nodes[5])
@@ -340,7 +333,7 @@ def start_backtrack ():
     path_coor = []
     current_node = Closed_List[-1]
     path_nodes.append(current_node)
-    path_coor.append((current_node['node_coor'][0], current_node['node_coor'][1]))
+    path_coor.append((current_node['node_coor'][X], current_node['node_coor'][Y], current_node['node_coor'][THETA]))
     print("First node used:", current_node)
     
 # (TC, C2C, C2G, point_index, (x,y,theta)parent_coordinates, (x,y,theta)coordinates)
@@ -352,48 +345,52 @@ def start_backtrack ():
                 current_node = node
                 break
         path_nodes.append(current_node)
-        path_coor.append((current_node['node_coor'][0], current_node['node_coor'][1]))
-    #print(path_coor)
+        path_coor.append((current_node['node_coor'][X], current_node['node_coor'][Y], current_node['node_coor'][THETA]))
 
     path_coor.reverse()
     run_visualization(path_coor)
-    #plot_function(path_coor)
-    #plt.show()
-    #print("length of closed list:", len(Closed_List))
-    #print("length of closed path:", len(path_nodes))
-    #print("length of closed path coor:", len(path_coor))
 
 
+# runs visulization of path plan using OpenCV.
+# path shown is the solution path, with the connected nodes from the open list
 def run_visualization(path_coordinates):
-    counter = 0
-    for node in Closed_List:
-        child_coordinates = (node["node_coor"][X], node["node_coor"][Y])
-        if node["parent_coor"] == None:
-            parent_coordinates = None
-        else:
-            parent_coordinates = (node["parent_coor"][X], node["parent_coor"][Y])
-        draw_node(child_coordinates, parent_coordinates, color_map, GRAY)
-        counter += 1
-        if counter == 50:
-            cv.imshow('Djikstra\'s Algorith', color_map)
-            cv.waitKey(1)
-            counter = 0
-
-    parent = None
-    counter += 1
     for node in path_coordinates:
-        draw_node(node, parent, color_map, DARK_GREEN)
-        parent = node
-        cv.imshow('Djikstra\'s Algorith', color_map)
-        cv.waitKey(1)
+        if not point_in_goal(node[X], node[Y]):
+            draw_node((node[X], node[Y]), None, color_map, GREEN)
+            for action in actions:
+                plot_curve(node, action[0], action[1], color_map, GRAY)
+        else:
+            #color goal node red
+            node = path_coordinates[-1]
+            draw_node((node[X], node[Y]), None, color_map, RED)
 
-    node = path_coordinates[-1]
-    draw_node(node, parent, color_map, RED)
-    cv.imshow('Djikstra\'s Algorith', color_map)
-
+    cv.imshow('A* Algorithm', color_map)
     cv.waitKey(0)
     cv.destroyAllWindows()
     return
+
+
+def plot_curve(node, UL,UR, map, color):
+    t = 0
+    D=0   
+    #dt = 0.1
+    Xn=node[X]
+    Yn=node[Y]
+    Thetan = 3.14 * node[THETA] / 180
+
+    # Xi, Yi,Thetai: Input point's coordinates
+    # Xs, Ys: Start point coordinates for plot function
+    # Xn, Yn, Thetan: End point coordintes
+    while t<1:
+        t = t + dt
+        Xs = Xn
+        Ys = Yn
+        Xn += round(0.5*r * (UL + UR) * math.cos(Thetan) * dt)
+        Yn += round(0.5*r * (UL + UR) * math.sin(Thetan) * dt)
+        Thetan += (r / L) * (UR - UL) * dt
+        __draw_line((Xs*SCALE_FACTOR, Ys*SCALE_FACTOR), (Xn*SCALE_FACTOR, Yn*SCALE_FACTOR), map, GRAY)
+    Xn = Xn
+    Yn = Yn
 
 
 if __name__ == '__main__':
@@ -414,22 +411,24 @@ if __name__ == '__main__':
         print()
         step_size = int(input("enter step size (0-10): "))
         clearance = int(input("enter the clearance used for navigation (in mm): "))
-        ROBOT_SIZE = ROBOT_SIZE + clearance
+        ROBOT_SIZE_SCALED = ROBOT_SIZE + clearance * SCALE_FACTOR
     else:
         start_x_position  = 50
         start_y_position  = 180
         start_theta_position  = 0
         goal_x_position  = 540
         goal_y_position  = 185
-        # RPM_1 = 50
-        # RPM_2 = 100
+        RPM_1 = 3
+        RPM_2 = 6 
+        r = 3.3
+        L = 16
+        dt = .25
         # step_size = 1
         # ROBOT_SIZE = 5  # (mm) 105 is the size if the robot in mm.  Will not work for this simulation
-        clearance = 2
-        ROBOT_SIZE = ROBOT_SIZE + clearance
-
-
-
+        clearance = 5
+        ROBOT_SIZE_SCALED = ROBOT_SIZE_SCALED + clearance * SCALE_FACTOR
+        
+    actions = [[RPM_1, RPM_1], [RPM_1, 0], [0, RPM_1], [RPM_2, RPM_2], [RPM_2, 0], [0, RPM_2], [RPM_1, RPM_2], [RPM_2, RPM_1]]
 
     start_position = (start_x_position, start_y_position, start_theta_position)
     goal_position = (goal_x_position, goal_y_position)

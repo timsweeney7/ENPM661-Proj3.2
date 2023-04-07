@@ -177,8 +177,8 @@ def C2G_func (n_position, g_position):
     C2G = round(((g_position[0]-n_position[0])**2 + (g_position[1]-n_position[1])**2)**0.5, 1)
     return C2G
 
-RPM_1 = 2
-RPM_2 = 12
+RPM_1 = 10
+RPM_2 = 20
 r = 1
 L = 4
 dt = .5
@@ -203,7 +203,7 @@ def explore(n,UL,UR):
         # plt.plot([Xs, Xn], [Ys, Yn], color="blue")
         t = t + dt
     
-    Thetan = 180 * (Thetan) / 3.14
+    Thetan = (180 * (Thetan) / 3.14) %360
     new_position = round(Xn,2), round(Yn,2), round(Thetan,2)
     D=round(D+ math.sqrt(math.pow((0.5*r * (UL + UR) * math.cos(Thetan) * dt),2)+math.pow((0.5*r * (UL + UR) * math.sin(Thetan) * dt),2)), 2)
     new_C2C = n[1]+D
@@ -218,15 +218,11 @@ def explore(n,UL,UR):
 def exploreNodes(): 
     global goal_found
     hq.heapify(Open_List)
-    # print("Open_List_init", Open_List)
     while Open_List:
         if goal_found:
             break
         popped_node = hq.heappop(Open_List)
-        # print("starting node:", popped_node)
         Closed_Coor.add((popped_node[5][0], popped_node[5][1]))
-        # print("closed coor:", Closed_Coor)
-        # print(map_points)
 
 #popped node is checked and added to the closed list as a dic
         check_popped_status(popped_node)
@@ -237,64 +233,53 @@ def exploreNodes():
 #checks if the newly created node falls within the defined map points, outside the obstacles, has not been closed already and its not within the threshhold of other points
 #when all pass, it adds it to the open list 
         new_node = explore(copy.deepcopy(popped_node), actions[0][0], actions[0][1])
-        # print("NEW1:", new_node)
         if ((new_node[5][0], new_node[5][1])) in map_points:
-            # print("First Check") 
             if ((new_node[5][0], new_node[5][1])) not in obstacle_points:
-                # print("Second Check") 
                 if ((new_node[5][0], new_node[5][1])) not in Closed_Coor:
-                    # print("Third Check") 
-                    if threshhold(new_node[5][0], new_node[5][1], new_node[5][2]):
+                    if threshhold(new_node[5][0], new_node[5][1]):
                         checkC2C(copy.deepcopy(popped_node), new_node)
         new_node = explore(copy.deepcopy(popped_node), actions[1][0], actions[1][1])
-        # print("NEW2:", new_node)
         if ((new_node[5][0], new_node[5][1])) in map_points: 
             if ((new_node[5][0], new_node[5][1])) not in obstacle_points:
                 if ((new_node[5][0], new_node[5][1])) not in Closed_Coor:
-                    # if threshhold(new_node[5][0], new_node[5][1], new_node[5][2]):
-                    checkC2C(copy.deepcopy(popped_node), new_node)
+                    if threshhold(new_node[5][0], new_node[5][1]):
+                        checkC2C(copy.deepcopy(popped_node), new_node)
         new_node = explore(copy.deepcopy(popped_node), actions[2][0], actions[2][1])
-        # print("NEW3:", new_node)
         if ((new_node[5][0], new_node[5][1])) in map_points: 
             if ((new_node[5][0], new_node[5][1])) not in obstacle_points:
                 if ((new_node[5][0], new_node[5][1])) not in Closed_Coor:
-                    # if threshhold(new_node[5][0], new_node[5][1], new_node[5][2]):
-                    checkC2C(copy.deepcopy(popped_node), new_node)
+                    if threshhold(new_node[5][0], new_node[5][1]):
+                        checkC2C(copy.deepcopy(popped_node), new_node)
         new_node = explore(copy.deepcopy(popped_node), actions[3][0], actions[3][1])
-        # print("NEW4:", new_node)
         if ((new_node[5][0], new_node[5][1])) in map_points: 
             if ((new_node[5][0], new_node[5][1])) not in obstacle_points:
                 if ((new_node[5][0], new_node[5][1])) not in Closed_Coor:
-                    # if threshhold(new_node[5][0], new_node[5][1], new_node[5][2]):
-                    checkC2C(copy.deepcopy(popped_node), new_node)
+                    if threshhold(new_node[5][0], new_node[5][1]):
+                        checkC2C(copy.deepcopy(popped_node), new_node)
         new_node = explore(copy.deepcopy(popped_node), actions[4][0], actions[4][1])
-        # print("NEW5:", new_node)
         if ((new_node[5][0], new_node[5][1])) in map_points: 
             if ((new_node[5][0], new_node[5][1])) not in obstacle_points:
                 if ((new_node[5][0], new_node[5][1])) not in Closed_Coor:
-                    # if threshhold(new_node[5][0], new_node[5][1], new_node[5][2]):
-                    checkC2C(copy.deepcopy(popped_node), new_node)
+                    if threshhold(new_node[5][0], new_node[5][1]):
+                        checkC2C(copy.deepcopy(popped_node), new_node)
         new_node = explore(copy.deepcopy(popped_node), actions[5][0], actions[5][1])
-        # print("NEW6:", new_node)
         if ((new_node[5][0], new_node[5][1])) in map_points: 
             if ((new_node[5][0], new_node[5][1])) not in obstacle_points:
                 if ((new_node[5][0], new_node[5][1])) not in Closed_Coor:
-                    # if threshhold(new_node[5][0], new_node[5][1], new_node[5][2]):
-                    checkC2C(copy.deepcopy(popped_node), new_node)
+                    if threshhold(new_node[5][0], new_node[5][1]):
+                        checkC2C(copy.deepcopy(popped_node), new_node)
         new_node = explore(copy.deepcopy(popped_node), actions[6][0], actions[6][1])
-        # print("NEW7:", new_node)
         if ((new_node[5][0], new_node[5][1])) in map_points: 
             if ((new_node[5][0], new_node[5][1])) not in obstacle_points:
                 if ((new_node[5][0], new_node[5][1])) not in Closed_Coor:
-                    # if threshhold(new_node[5][0], new_node[5][1], new_node[5][2]):
-                    checkC2C(copy.deepcopy(popped_node), new_node)
+                    if threshhold(new_node[5][0], new_node[5][1]):
+                        checkC2C(copy.deepcopy(popped_node), new_node)
         new_node = explore(copy.deepcopy(popped_node), actions[7][0], actions[7][1])
-        # print("NEW8:", new_node)
         if ((new_node[5][0], new_node[5][1])) in map_points: 
             if ((new_node[5][0], new_node[5][1])) not in obstacle_points:
                 if ((new_node[5][0], new_node[5][1])) not in Closed_Coor:
-                    # if threshhold(new_node[5][0], new_node[5][1], new_node[5][2]):
-                    checkC2C(copy.deepcopy(popped_node), new_node)
+                    if threshhold(new_node[5][0], new_node[5][1]):
+                        checkC2C(copy.deepcopy(popped_node), new_node)
         # print("OpenList:", Open_List)
         return Open_List, Closed_Coor, Closed_List
     
@@ -311,17 +296,24 @@ def threshhold(nx, ny):
         threshold_coor.add((nx-0.5, ny))
         threshold_coor.add((nx-0.5, ny-0.5))
         threshold_coor.add((nx, ny-0.5))
-        threshold_coor.add((nx, ny-0.5))
+        threshold_coor.add((nx, ny+0.5))
         return threshold_coor, False
 
 #check if newly explored point has been explored previously, if so compare C2C and update if the new C2C is
 # lower than the one originally stored
 def checkC2C (on, n):
     global node_index
-    node_index += 1
-    new = (n[0], n[1], n[2], node_index, on[5], n[5])
-    hq.heappush(Open_List, new)
-    hq.heapify(Open_List)
+    for i, nodes in enumerate(Open_List):
+        if (nodes[5][0],nodes[5][1]) == (n[5][0],n[5][1]):
+            if n[0] < nodes[0]:
+                new_node = (n[0], n[1], n[2], nodes[1], n[4], nodes[5])
+                Open_List[i] = new_node
+                hq.heapify(Open_List)
+            return Open_List
+    else:
+        node_index += 1
+        new = (n[0], n[1], n[2], node_index, on[5], n[5])
+        hq.heappush(Open_List, new)
     return Open_List
 
 #function to check the status of the popped node, if it matches the goal coordinates it starts the backtracking function
@@ -428,11 +420,11 @@ if __name__ == '__main__':
         start_y_position  = 180
         start_theta_position  = 0
         goal_x_position  = 540
-        goal_y_position  = 180
+        goal_y_position  = 185
         # RPM_1 = 50
         # RPM_2 = 100
         # step_size = 1
-        ROBOT_SIZE = 5  # (mm) 105 is the size if the robot in mm.  Will not work for this simulation
+        # ROBOT_SIZE = 5  # (mm) 105 is the size if the robot in mm.  Will not work for this simulation
         clearance = 2
         ROBOT_SIZE = ROBOT_SIZE + clearance
 
@@ -488,4 +480,3 @@ if __name__ == '__main__':
     print("starting exploration")
     while not goal_found:
         exploreNodes()
-        # print("OpenList1:", Open_List)

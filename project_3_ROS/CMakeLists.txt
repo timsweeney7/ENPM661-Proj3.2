@@ -75,15 +75,7 @@ include_directories(
 # Install
 ################################################################################
 catkin_install_python(PROGRAMS 
-  nodes/turtlebot3_obstacle
-  nodes/turtlebot3_client
-  nodes/turtlebot3_server
-  nodes/turtlebot3_pointop_key
-  nodes/turtlebot3_bumper 
-  nodes/turtlebot3_cliff
-  nodes/turtlebot3_sonar
-  nodes/turtlebot3_illumination
-  nodes/turtlebot3_marker_server
+  nodes/turtlebot3_control.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

@@ -359,6 +359,8 @@ def run_visualization(path_coordinates):
             draw_node((node[X], node[Y]), None, color_map, GREEN)
             for action in actions:
                 plot_curve(node, action[0], action[1], color_map, GRAY)
+            cv.imshow('A* Algorithm', color_map)
+            cv.waitKey(200)
         else:
             #color goal node red
             node = path_coordinates[-1]

@@ -1,3 +1,5 @@
+# import rospy
+# from geometry_msgs.msg import twist
 import heapq as hq
 import copy
 import numpy as np
@@ -195,14 +197,19 @@ def explore(n,UL,UR):
         Yn += round(0.5*r * (UL + UR) * math.sin(Thetan) * dt)
         Thetan += (r / L) * (UR - UL) * dt
     
-    Thetan = round(((180 * (Thetan) / 3.14) %360), 2)
-    new_position = Xn, Yn, Thetan
+    Theta_n = round(((180 * (Thetan) / 3.14) %360), 2)
+    UL_m = UL * 2 *math.pi * r / 60
+    UR_m = UR * 2 *math.pi * r / 60
+    Vx = round(0.5*r * (UL_m + UR_m) * math.cos(Thetan) * dt)
+    Vy = round(0.5*r * (UL_m + UR_m) * math.sin(Thetan) * dt)
+    new_position = Xn, Yn, Theta_n
     # what is "D"?
     D=round(D+ math.sqrt(math.pow((0.5*r * (UL + UR) * math.cos(Thetan) * dt),2)+math.pow((0.5*r * (UL + UR) * math.sin(Thetan) * dt),2)), 2)
     new_C2C = round((n[1]+D),2)
     new_C2G = round((C2G_func(new_position, goal_position)),2)
     new_TC = round((new_C2C + new_C2G),2)
-    new_node = (new_TC, new_C2C, new_C2G, node_index, n[5], new_position)
+    point_vel = (float(Vx*1.5), float(Vy*1.5), float(round((Thetan/3),2)))
+    new_node = (new_TC, new_C2C, new_C2G, node_index, n[5], new_position, point_vel)
     return new_node
 
 # main exploration function. starts by popping a node out of the open list and checking the status of the
@@ -219,7 +226,7 @@ def exploreNodes():
 
         #popped node is checked and added to the closed list as a dic
         check_popped_status(popped_node)
-        popped_node_dic = {"TC": popped_node[0], "C2C": popped_node[1], "C2G": popped_node[2], "node_index": popped_node[3], "parent_coor": popped_node[4], "node_coor": popped_node[5]}
+        popped_node_dic = {"TC": popped_node[0], "C2C": popped_node[1], "C2G": popped_node[2], "node_index": popped_node[3], "parent_coor": popped_node[4], "node_coor": popped_node[5], "vel": popped_node[6]}
         Closed_List.append(popped_node_dic)
 
         # checks if the newly created node falls within the defined map points, outside the obstacles, 
@@ -299,13 +306,13 @@ def checkTC (on, n):
     for i, nodes in enumerate(Open_List): 
         if (nodes[5][0],nodes[5][1]) == (n[5][0],n[5][1]):
             if n[0] < nodes[0]:
-                new_node = (n[0], n[1], n[2], nodes[1], n[4], nodes[5])
+                new_node = (n[0], n[1], n[2], nodes[1], n[4], nodes[5], n[6])
                 Open_List[i] = new_node
                 hq.heapify(Open_List)
             return Open_List
     else:
         node_index += 1
-        new = (n[0], n[1], n[2], node_index, on[5], n[5])
+        new = (n[0], n[1], n[2], node_index, on[5], n[5], n[6])
         hq.heappush(Open_List, new)
     return Open_List
 
@@ -313,7 +320,7 @@ def checkTC (on, n):
 def check_popped_status (n):
     global goal_found
     if point_in_goal(n[5][0], n[5][1]):
-        goal_node = {"TC": n[0], "C2C": n[1], "C2G": n[2], "node_index": n[3], "parent_coor": n[4], "node_coor": n[5]}
+        goal_node = {"TC": n[0], "C2C": n[1], "C2G": n[2], "node_index": n[3], "parent_coor": n[4], "node_coor": n[5], "vel": n[6]}
         Closed_List.append(goal_node)
         print("goal node position:", n[5])
         print("target position:", goal_position)
@@ -331,6 +338,7 @@ def start_backtrack ():
     print("Backtracking...")
     path_nodes = []
     path_coor = []
+    path_vel = []
     current_node = Closed_List[-1]
     path_nodes.append(current_node)
     path_coor.append((current_node['node_coor'][X], current_node['node_coor'][Y], current_node['node_coor'][THETA]))
@@ -346,8 +354,10 @@ def start_backtrack ():
                 break
         path_nodes.append(current_node)
         path_coor.append((current_node['node_coor'][X], current_node['node_coor'][Y], current_node['node_coor'][THETA]))
+        path_vel.append((current_node['vel'][X], current_node['vel'][Y], current_node['vel'][THETA]))
 
     path_coor.reverse()
+    path_vel.reverse()
     run_visualization(path_coor)
 
 
@@ -438,11 +448,12 @@ if __name__ == '__main__':
     thresh = 0.5
 
     # initial values for the start node
+    vel1 = (0, 0, 0)
     C2G1 = C2G_func(start_position, goal_position)
     C2C1 = 0
     TC1 = C2G1 + C2C1
-    # (C2G, C2C, TC, point_index, (x,y,theta)parent_coordinates, (x,y,theta)coordinates)
-    start_node = (TC1, C2C1, C2G1, node_index, None, start_position)
+    # (C2G, C2C, TC, point_index, (x,y,theta)parent_coordinates, (x,y,theta)coordinates, velocity)
+    start_node = (TC1, C2C1, C2G1, node_index, None, start_position, vel1)
     hq.heappush(Open_List, start_node)
     print("initial_Open_list:", Open_List)
 

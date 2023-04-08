@@ -227,6 +227,7 @@ def explore(n,UL,UR):
         Thetan += (r / L) * (UR - UL) * dt
     
     Theta_n = round(((180 * (Thetan) / 3.14) %360), 2)
+    ThetanW = (r / L) * (UR - UL) * dt
     UL_m = UL * 2 *math.pi * r / 60
     UR_m = UR * 2 *math.pi * r / 60
     Vx = round(0.5*r * (UL_m + UR_m) * math.cos(Thetan) * dt)
@@ -237,7 +238,7 @@ def explore(n,UL,UR):
     new_C2C = round((n[1]+D),2)
     new_C2G = round((C2G_func(new_position, goal_position)),2)
     new_TC = round((new_C2C + new_C2G),2)
-    point_vel = (float(Vx*1.5), float(Vy*1.5), float(round((Thetan/3),2)))
+    point_vel = (float(Vx)*0.25, float(Vy)*0.25, float(ThetanW))
     new_node = (new_TC, new_C2C, new_C2G, node_index, n[5], new_position, point_vel)
     return new_node
 
@@ -404,10 +405,15 @@ def move(path_vel):
 
     for i in path_vel:
         vel_msg.linear.x = math.sqrt(i[0]**2 + i[1]**2)
-        vel_msg.angular.z = i[2]
+        vel_msg.angular.z = (-1*i[2])
         print("current Vel:", i)
         vel_pub.publish(vel_msg)
-        rospy.sleep(0.5)
+        rospy.sleep(1)
+        vel_msg.linear.x = 0
+        vel_msg.angular.z = 0
+        print("break")
+        vel_pub.publish(vel_msg)
+        rospy.sleep(3)
 
 
 # runs visulization of path plan using OpenCV.
@@ -477,8 +483,8 @@ if __name__ == '__main__':
         start_x_position  = 50
         start_y_position  = 100
         start_theta_position  = 0
-        goal_x_position  = 550
-        goal_y_position  = 100
+        goal_x_position  = 150
+        goal_y_position  = 180
         RPM_1 = 2
         RPM_2 = 5 
         r = 3.3

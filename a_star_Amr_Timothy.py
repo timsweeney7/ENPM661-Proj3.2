@@ -208,7 +208,7 @@ def explore(n,UL,UR):
     new_C2C = round((n[1]+D),2)
     new_C2G = round((C2G_func(new_position, goal_position)),2)
     new_TC = round((new_C2C + new_C2G),2)
-    point_vel = (float(Vx/4), float(Vy/4), float(Thetan))
+    point_vel = (float(Vx/4), float(Vy/4), float(Thetan/4))
     new_node = (new_TC, new_C2C, new_C2G, node_index, n[5], new_position, point_vel)
     return new_node
 
@@ -461,7 +461,6 @@ if __name__ == '__main__':
     start_position = (start_x_position, start_y_position, start_theta_position)
     goal_position = (goal_x_position, goal_y_position)
 
-    thresh = 0.5
 
     # initial values for the start node
     vel1 = (0, 0, 0)

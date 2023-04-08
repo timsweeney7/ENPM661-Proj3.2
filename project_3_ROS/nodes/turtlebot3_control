@@ -35,7 +35,7 @@ import numpy as np
 import math
 from matplotlib import pyplot as plt
 import cv2 as cv
-from numpy import tan, deg2rad
+from numpy import tan, deg2rad, rad2deg
 
 
 
@@ -214,31 +214,35 @@ def C2G_func (n_position, g_position):
 def explore(n,UL,UR):
     t = 0
     D=0
-    Xn=n[5][0]
-    Yn=n[5][1]
-    Thetan = 3.14 * n[5][2] / 180
+    Xn=n[5][X]
+    Yn=n[5][Y]
+    Thetan = deg2rad(n[5][THETA])
+
     # Xi, Yi,Thetai: Input point's coordinates
-    # Xs, Ys: Start point coordinates for plot function
     # Xn, Yn, Thetan: End point coordintes
     while t<1:
         t = t + dt
-        Xn += round(0.5*r * (UL + UR) * math.cos(Thetan) * dt)
-        Yn += round(0.5*r * (UL + UR) * math.sin(Thetan) * dt)
+        Xn += 0.5*r * (UL + UR) * math.cos(Thetan) * dt
+        Yn += 0.5*r * (UL + UR) * math.sin(Thetan) * dt
         Thetan += (r / L) * (UR - UL) * dt
     
-    Theta_n = round(((180 * (Thetan) / 3.14) %360), 2)
-    UL_m = UL * 2 *math.pi * r / 60
-    UR_m = UR * 2 *math.pi * r / 60
-    Vx = round(0.5*r * (UL_m + UR_m) * math.cos(Thetan) * dt)
-    Vy = round(0.5*r * (UL_m + UR_m) * math.sin(Thetan) * dt)
-    new_position = Xn, Yn, Theta_n
+    Theta_n = round(rad2deg(Thetan), 2)
+
+    theta_dot = (r / L) * (UR - UL)
+    x_dot = 0.5*(r/100) * (UL + UR) * math.cos(Thetan)
+    y_dot = 0.5*(r/100) * (UL + UR) * math.sin(Thetan)
+
+    new_position = round(Xn), round(Yn), round(Theta_n)
+
     # what is "D"?
     D=round(D+ math.sqrt(math.pow((0.5*r * (UL + UR) * math.cos(Thetan) * dt),2)+math.pow((0.5*r * (UL + UR) * math.sin(Thetan) * dt),2)), 2)
     new_C2C = round((n[1]+D),2)
     new_C2G = round((C2G_func(new_position, goal_position)),2)
     new_TC = round((new_C2C + new_C2G),2)
-    point_vel = (float(Vx*1.5), float(Vy*1.5), float(round((Thetan/3),2)))
+
+    point_vel = (float(x_dot), float(y_dot), float(theta_dot))
     new_node = (new_TC, new_C2C, new_C2G, node_index, n[5], new_position, point_vel)
+
     return new_node
 
 # main exploration function. starts by popping a node out of the open list and checking the status of the
@@ -371,9 +375,10 @@ def start_backtrack ():
     current_node = Closed_List[-1]
     path_nodes.append(current_node)
     path_coor.append((current_node['node_coor'][X], current_node['node_coor'][Y], current_node['node_coor'][THETA]))
+    path_vel.append((current_node['vel'][X], current_node['vel'][Y], current_node['vel'][THETA]))
     print("First node used:", current_node)
     
-# (TC, C2C, C2G, point_index, (x,y,theta)parent_coordinates, (x,y,theta)coordinates)
+# (TC, C2C, C2G, point_index, (x,y,theta)parent_coordinates, (x,y,theta)coordinates, vel(x,y,theta))
     while current_node["parent_coor"] is not None:
         search_value = current_node["parent_coor"]
         for node in Closed_List:
@@ -393,21 +398,31 @@ def start_backtrack ():
 
 
 def move(path_vel): 
-    rospy.init_node('go.launch', anonymous=False)
-
-    vel_pub = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
+    ROS = True
 
     vel_msg = Twist()
+    if ROS == True:
+        rospy.init_node('turtlebot3_control')
+        vel_pub = rospy.Publisher('cmd_vel', Twist, queue_size=10)
+        print('starting movement!')
 
-    print('starting movement!')
-
+    counter = 0
     for i in path_vel:
         vel_msg.linear.x = math.sqrt(i[0]**2 + i[1]**2)
-        vel_msg.angular.z = i[2]
-        print("current Vel:", i)
+        vel_msg.angular.z = (-1*i[2])
+        
+        print("[",counter,"]")
+        counter+=1
+        print(vel_msg)
+        print()
+        if ROS == True:
+            vel_pub.publish(vel_msg)
+            rospy.sleep(1.00)
+    
+    vel_msg.linear.x = 0
+    vel_msg.angular.z = 0
+    if ROS == True:
         vel_pub.publish(vel_msg)
-        rospy.sleep(0.5)
-
 
 # runs visulization of path plan using OpenCV.
 # path shown is the solution path, with the connected nodes from the open list
@@ -433,10 +448,9 @@ def run_visualization(path_coordinates):
 def plot_curve(node, UL,UR, map, color):
     t = 0
     D=0   
-    #dt = 0.1
     Xn=node[X]
     Yn=node[Y]
-    Thetan = 3.14 * node[THETA] / 180
+    Thetan = deg2rad(node[THETA])
 
     # Xi, Yi,Thetai: Input point's coordinates
     # Xs, Ys: Start point coordinates for plot function
@@ -476,18 +490,19 @@ if __name__ == '__main__':
         start_x_position  = 50
         start_y_position  = 100
         start_theta_position  = 0
-        goal_x_position  = 550
-        goal_y_position  = 100
-        RPM_1 = 2
-        RPM_2 = 5 
-        r = 3.3
-        L = 16
+        goal_x_position  = 560
+        goal_y_position  = 170
+        RPM_1 = 5         # (rot/s)
+        RPM_2 = 8         # (rot/s)
+        r = 3.3           # (cm)
+        L = 16            # (cm)
         dt = 0.25
         # step_size = 1
         # ROBOT_SIZE = 5  # (mm) 105 is the size if the robot in mm.  Will not work for this simulation
         clearance = 12
         ROBOT_SIZE_SCALED = ROBOT_SIZE_SCALED + clearance * SCALE_FACTOR
-        
+
+    # 0 = left   1 = right    
     actions = [[RPM_1, RPM_1], [RPM_1, 0], [0, RPM_1], [RPM_2, RPM_2], [RPM_2, 0], [0, RPM_2], [RPM_1, RPM_2], [RPM_2, RPM_1]]
 
     start_position = (start_x_position, start_y_position, start_theta_position)

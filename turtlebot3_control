@@ -395,25 +395,29 @@ def start_backtrack ():
 
 
 def move(path_vel): 
-    rospy.init_node('turtlebot3_control')
-
-    vel_pub = rospy.Publisher('cmd_vel', Twist, queue_size=10)
-
+    ROS = True
+    
     vel_msg = Twist()
-
-    print('starting movement!')
+    if ROS == True:
+        rospy.init_node('turtlebot3_control')
+        vel_pub = rospy.Publisher('cmd_vel', Twist, queue_size=10)
+        print('starting movement!')
 
     for i in path_vel:
         vel_msg.linear.x = math.sqrt(i[0]**2 + i[1]**2)
         vel_msg.angular.z = (-1*i[2])
-        print("current Vel:", i)
-        vel_pub.publish(vel_msg)
-        rospy.sleep(1)
-        vel_msg.linear.x = 0
-        vel_msg.angular.z = 0
-        print("break")
-        vel_pub.publish(vel_msg)
-        rospy.sleep(3)
+        print(vel_msg)
+        print()
+        if ROS == True:
+            vel_pub.publish(vel_msg)
+            rospy.sleep(1)
+        #vel_msg.linear.x = 0
+        #vel_msg.angular.z = 0
+        #print("break")
+        #print()
+        #if ROS == True:
+        #    vel_pub.publish(vel_msg)
+        #    rospy.sleep(3)
 
 
 # runs visulization of path plan using OpenCV.
@@ -486,7 +490,7 @@ if __name__ == '__main__':
         goal_x_position  = 150
         goal_y_position  = 180
         RPM_1 = 2
-        RPM_2 = 5 
+        RPM_2 = 4 
         r = 3.3
         L = 16
         dt = 0.25

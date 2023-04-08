@@ -33,7 +33,7 @@
 
   <node pkg="project_3" 
         type="turtlebot3_control" 
-        name="turtlebot3_control"
+        name="turtlebot3_control_node"
         output="screen"
   />
 

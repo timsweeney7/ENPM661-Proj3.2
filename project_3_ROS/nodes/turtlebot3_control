@@ -265,48 +265,57 @@ def exploreNodes():
         # checks if the newly created node falls within the defined map points, outside the obstacles, 
         # has not been closed already and its not within the threshhold of other points
         # when all pass, it adds it to the open list 
+
+        #[RPM_1, RPM_1]
         new_node = explore(copy.deepcopy(popped_node), actions[0][0], actions[0][1])
         if ((new_node[5][0], new_node[5][1])) in map_points:
             if ((new_node[5][0], new_node[5][1])) not in obstacle_points:
                 if ((new_node[5][0], new_node[5][1])) not in Closed_Coor:
                     if threshhold(new_node[5][0], new_node[5][1]):
                         checkTC(copy.deepcopy(popped_node), new_node)
+        #[RPM_1, 0]
         new_node = explore(copy.deepcopy(popped_node), actions[1][0], actions[1][1])
         if ((new_node[5][0], new_node[5][1])) in map_points: 
             if ((new_node[5][0], new_node[5][1])) not in obstacle_points:
                 if ((new_node[5][0], new_node[5][1])) not in Closed_Coor:
                     if threshhold(new_node[5][0], new_node[5][1]):
                         checkTC(copy.deepcopy(popped_node), new_node)
+        #[0, RPM_1]
         new_node = explore(copy.deepcopy(popped_node), actions[2][0], actions[2][1])
         if ((new_node[5][0], new_node[5][1])) in map_points: 
             if ((new_node[5][0], new_node[5][1])) not in obstacle_points:
                 if ((new_node[5][0], new_node[5][1])) not in Closed_Coor:
                     if threshhold(new_node[5][0], new_node[5][1]):
                         checkTC(copy.deepcopy(popped_node), new_node)
+        #[RPM_2, RPM_2]
         new_node = explore(copy.deepcopy(popped_node), actions[3][0], actions[3][1])
         if ((new_node[5][0], new_node[5][1])) in map_points: 
             if ((new_node[5][0], new_node[5][1])) not in obstacle_points:
                 if ((new_node[5][0], new_node[5][1])) not in Closed_Coor:
                     if threshhold(new_node[5][0], new_node[5][1]):
                         checkTC(copy.deepcopy(popped_node), new_node)
+        #[RPM_2, 0]
         new_node = explore(copy.deepcopy(popped_node), actions[4][0], actions[4][1])
         if ((new_node[5][0], new_node[5][1])) in map_points: 
             if ((new_node[5][0], new_node[5][1])) not in obstacle_points:
                 if ((new_node[5][0], new_node[5][1])) not in Closed_Coor:
                     if threshhold(new_node[5][0], new_node[5][1]):
                         checkTC(copy.deepcopy(popped_node), new_node)
+        #[0, RPM_2]
         new_node = explore(copy.deepcopy(popped_node), actions[5][0], actions[5][1])
         if ((new_node[5][0], new_node[5][1])) in map_points: 
             if ((new_node[5][0], new_node[5][1])) not in obstacle_points:
                 if ((new_node[5][0], new_node[5][1])) not in Closed_Coor:
                     if threshhold(new_node[5][0], new_node[5][1]):
                         checkTC(copy.deepcopy(popped_node), new_node)
+        #[RPM_1, RPM_2]
         new_node = explore(copy.deepcopy(popped_node), actions[6][0], actions[6][1])
         if ((new_node[5][0], new_node[5][1])) in map_points: 
             if ((new_node[5][0], new_node[5][1])) not in obstacle_points:
                 if ((new_node[5][0], new_node[5][1])) not in Closed_Coor:
                     if threshhold(new_node[5][0], new_node[5][1]):
                         checkTC(copy.deepcopy(popped_node), new_node)
+        #[RPM_2, RPM_1]
         new_node = explore(copy.deepcopy(popped_node), actions[7][0], actions[7][1])
         if ((new_node[5][0], new_node[5][1])) in map_points: 
             if ((new_node[5][0], new_node[5][1])) not in obstacle_points:
@@ -390,6 +399,7 @@ def start_backtrack ():
         path_coor.append((current_node['node_coor'][X], current_node['node_coor'][Y], current_node['node_coor'][THETA]))
         path_vel.append((current_node['vel'][X], current_node['vel'][Y], current_node['vel'][THETA]))
 
+    path_nodes.reverse()
     path_coor.reverse()
     path_vel.reverse()
     move(path_vel)
@@ -398,8 +408,7 @@ def start_backtrack ():
 
 
 def move(path_vel): 
-    ROS = False
-
+    
     vel_msg = Twist()
     if ROS == True:
         rospy.init_node('turtlebot3_control')
@@ -470,6 +479,7 @@ def plot_curve(node, UL,UR, map, color):
 if __name__ == '__main__':
 
     DEBUG = True
+    ROS = True
 
     # user input required to fill out the following
     if DEBUG == False:

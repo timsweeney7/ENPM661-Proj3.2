@@ -1,5 +1,5 @@
-# import rospy
-# from geometry_msgs.msg import twist
+import rospy
+from geometry_msgs.msg import Twist
 import heapq as hq
 import copy
 import numpy as np
@@ -360,6 +360,22 @@ def start_backtrack ():
     path_vel.reverse()
     run_visualization(path_coor)
 
+def move(path_vel): 
+    rospy.init_node('go.launch', anonymmous=False)
+
+    vel_pub = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
+
+    vel_msg = Twist()
+
+    print('starting movement!')
+
+    for i in path_vel:
+        vel_msg.linear.x = math.sqrt(i[0]**2 + i[1]**2)
+        vel_msg.angular.z = i[2]
+        print("current Vel:", i)
+        vel_pub.publish(vel_msg)
+        rospy.sleep(1)
+
 
 # runs visulization of path plan using OpenCV.
 # path shown is the solution path, with the connected nodes from the open list
@@ -426,10 +442,10 @@ if __name__ == '__main__':
         ROBOT_SIZE_SCALED = ROBOT_SIZE + clearance * SCALE_FACTOR
     else:
         start_x_position  = 50
-        start_y_position  = 175
-        start_theta_position  = 0
-        goal_x_position  = 575
-        goal_y_position  = 175
+        start_y_position  = 100
+        start_theta_position  = 30
+        goal_x_position  = 550
+        goal_y_position  = 100
         RPM_1 = 2
         RPM_2 = 5 
         r = 3.3

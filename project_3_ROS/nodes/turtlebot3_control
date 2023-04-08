@@ -398,7 +398,7 @@ def start_backtrack ():
 
 
 def move(path_vel): 
-    ROS = True
+    ROS = False
 
     vel_msg = Twist()
     if ROS == True:
@@ -459,10 +459,10 @@ def plot_curve(node, UL,UR, map, color):
         t = t + dt
         Xs = Xn
         Ys = Yn
-        Xn += round(0.5*r * (UL + UR) * math.cos(Thetan) * dt)
-        Yn += round(0.5*r * (UL + UR) * math.sin(Thetan) * dt)
+        Xn += 0.5*r * (UL + UR) * math.cos(Thetan) * dt
+        Yn += 0.5*r * (UL + UR) * math.sin(Thetan) * dt
         Thetan += (r / L) * (UR - UL) * dt
-        __draw_line((Xs*SCALE_FACTOR, Ys*SCALE_FACTOR), (Xn*SCALE_FACTOR, Yn*SCALE_FACTOR), map, GRAY)
+        __draw_line((round(Xs*2)/2*SCALE_FACTOR, round(Ys*2)/2*SCALE_FACTOR), (round(Xn*2)/2*SCALE_FACTOR, round(Yn*2)/2*SCALE_FACTOR), map, color)
     Xn = Xn
     Yn = Yn
 

@@ -75,7 +75,7 @@ include_directories(
 # Install
 ################################################################################
 catkin_install_python(PROGRAMS 
-  nodes/turtlebot3_control.py
+  nodes/turtlebot3_control
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

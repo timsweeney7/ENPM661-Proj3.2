@@ -1,3 +1,32 @@
+#!/usr/bin/env python
+
+# Copyright (c) 2011, Willow Garage, Inc.
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+#    * Redistributions of source code must retain the above copyright
+#      notice, this list of conditions and the following disclaimer.
+#    * Redistributions in binary form must reproduce the above copyright
+#      notice, this list of conditions and the following disclaimer in the
+#      documentation and/or other materials provided with the distribution.
+#    * Neither the name of the Willow Garage, Inc. nor the names of its
+#      contributors may be used to endorse or promote products derived from
+#       this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+
 import rospy
 from geometry_msgs.msg import Twist
 import heapq as hq
@@ -6,7 +35,7 @@ import numpy as np
 import math
 from matplotlib import pyplot as plt
 import cv2 as cv
-from numpy import tan, deg2rad
+from numpy import tan, deg2rad, rad2deg
 
 
 
@@ -38,7 +67,7 @@ COORDINATES = 5
 # the turtlebot is 10.5 cm. 
 # in an unscaled simulation, 1 pixel represents a 1cm x 1cm square
 # mutliply ROBOT_SIZE by SCALE_FACTOR to determine pixel representation of robot
-ROBOT_SIZE = 10.5 
+ROBOT_SIZE = 10 
 ROBOT_SIZE_SCALED = ROBOT_SIZE * SCALE_FACTOR
 ROBOT_SIZE_SCALED = math.ceil(ROBOT_SIZE)
 
@@ -185,31 +214,35 @@ def C2G_func (n_position, g_position):
 def explore(n,UL,UR):
     t = 0
     D=0
-    Xn=n[5][0]
-    Yn=n[5][1]
-    Thetan = 3.14 * n[5][2] / 180
+    Xn=n[5][X]
+    Yn=n[5][Y]
+    Thetan = deg2rad(n[5][THETA])
+
     # Xi, Yi,Thetai: Input point's coordinates
-    # Xs, Ys: Start point coordinates for plot function
     # Xn, Yn, Thetan: End point coordintes
     while t<1:
-        t = t + dt
-        Xn += round(0.5*r * (UL + UR) * math.cos(Thetan) * dt)
-        Yn += round(0.5*r * (UL + UR) * math.sin(Thetan) * dt)
-        Thetan += (r / L) * (UR - UL) * dt
-    
-    Theta_n = round(((180 * (Thetan) / 3.14) %360), 2)
-    UL_m = UL * 2 *math.pi * r / 60
-    UR_m = UR * 2 *math.pi * r / 60
-    Vx = round(0.5*r * (UL_m + UR_m) * math.cos(Thetan) * dt)
-    Vy = round(0.5*r * (UL_m + UR_m) * math.sin(Thetan) * dt)
-    new_position = Xn, Yn, Theta_n
-    # what is "D"?
+        Thetan += (r / L) * (UR - UL) * dt * 2 * math.pi/60
+        Xn += round((0.5*r * (UL + UR) * math.cos(Thetan) * dt)*2)/20
+        Yn += round((0.5*r * (UL + UR) * math.sin(Thetan) * dt)*2)/20
+        t = t + dt 
+        temp_point = (Xn, Yn)
+        if temp_point in obstacle_points: 
+            return None 
+           
+    # print("temp_point:", temp_point)
+    Theta_n = round(rad2deg(Thetan), 2)
+    theta_dot = (r / L) * (UR - UL) *2*math.pi/60
+    x_dot = 0.5*(r/100) * (UL + UR) * math.cos(Thetan)*2*math.pi/60
+    y_dot = 0.5*(r/100) * (UL + UR) * math.sin(Thetan)*2*math.pi/60
+    new_position = round(Xn), round(Yn), round(Theta_n)
     D=round(D+ math.sqrt(math.pow((0.5*r * (UL + UR) * math.cos(Thetan) * dt),2)+math.pow((0.5*r * (UL + UR) * math.sin(Thetan) * dt),2)), 2)
     new_C2C = round((n[1]+D),2)
     new_C2G = round((C2G_func(new_position, goal_position)),2)
     new_TC = round((new_C2C + new_C2G),2)
-    point_vel = (float(Vx/4), float(Vy/4), float(Thetan/4))
+
+    point_vel = (float(x_dot), float(y_dot), float(theta_dot))
     new_node = (new_TC, new_C2C, new_C2G, node_index, n[5], new_position, point_vel)
+
     return new_node
 
 # main exploration function. starts by popping a node out of the open list and checking the status of the
@@ -218,6 +251,7 @@ def explore(n,UL,UR):
 def exploreNodes(): 
     global goal_found
     hq.heapify(Open_List)
+    # print("OpenListLen:", len(Open_List))
     while Open_List:
         if goal_found:
             break
@@ -232,54 +266,71 @@ def exploreNodes():
         # checks if the newly created node falls within the defined map points, outside the obstacles, 
         # has not been closed already and its not within the threshhold of other points
         # when all pass, it adds it to the open list 
+
+        #[RPM_1, RPM_1]
         new_node = explore(copy.deepcopy(popped_node), actions[0][0], actions[0][1])
-        if ((new_node[5][0], new_node[5][1])) in map_points:
-            if ((new_node[5][0], new_node[5][1])) not in obstacle_points:
-                if ((new_node[5][0], new_node[5][1])) not in Closed_Coor:
-                    if threshhold(new_node[5][0], new_node[5][1]):
-                        checkTC(copy.deepcopy(popped_node), new_node)
+        if new_node is not None:
+            if ((new_node[5][0], new_node[5][1])) in map_points:
+                if ((new_node[5][0], new_node[5][1])) not in obstacle_points:
+                    if ((new_node[5][0], new_node[5][1])) not in Closed_Coor:
+                        if threshhold(new_node[5][0], new_node[5][1]):
+                            checkTC(copy.deepcopy(popped_node), new_node)
+        #[RPM_1, 0]
         new_node = explore(copy.deepcopy(popped_node), actions[1][0], actions[1][1])
-        if ((new_node[5][0], new_node[5][1])) in map_points: 
-            if ((new_node[5][0], new_node[5][1])) not in obstacle_points:
-                if ((new_node[5][0], new_node[5][1])) not in Closed_Coor:
-                    if threshhold(new_node[5][0], new_node[5][1]):
-                        checkTC(copy.deepcopy(popped_node), new_node)
+        if new_node is not None:
+            if ((new_node[5][0], new_node[5][1])) in map_points:
+                if ((new_node[5][0], new_node[5][1])) not in obstacle_points:
+                    if ((new_node[5][0], new_node[5][1])) not in Closed_Coor:
+                        if threshhold(new_node[5][0], new_node[5][1]):
+                            checkTC(copy.deepcopy(popped_node), new_node)
+        #[0, RPM_1]
         new_node = explore(copy.deepcopy(popped_node), actions[2][0], actions[2][1])
-        if ((new_node[5][0], new_node[5][1])) in map_points: 
-            if ((new_node[5][0], new_node[5][1])) not in obstacle_points:
-                if ((new_node[5][0], new_node[5][1])) not in Closed_Coor:
-                    if threshhold(new_node[5][0], new_node[5][1]):
-                        checkTC(copy.deepcopy(popped_node), new_node)
+        if new_node is not None:
+            if ((new_node[5][0], new_node[5][1])) in map_points:
+                if ((new_node[5][0], new_node[5][1])) not in obstacle_points:
+                    if ((new_node[5][0], new_node[5][1])) not in Closed_Coor:
+                        if threshhold(new_node[5][0], new_node[5][1]):
+                            checkTC(copy.deepcopy(popped_node), new_node)
+        #[RPM_2, RPM_2]
         new_node = explore(copy.deepcopy(popped_node), actions[3][0], actions[3][1])
-        if ((new_node[5][0], new_node[5][1])) in map_points: 
-            if ((new_node[5][0], new_node[5][1])) not in obstacle_points:
-                if ((new_node[5][0], new_node[5][1])) not in Closed_Coor:
-                    if threshhold(new_node[5][0], new_node[5][1]):
-                        checkTC(copy.deepcopy(popped_node), new_node)
+        if new_node is not None:
+            if ((new_node[5][0], new_node[5][1])) in map_points:
+                if ((new_node[5][0], new_node[5][1])) not in obstacle_points:
+                    if ((new_node[5][0], new_node[5][1])) not in Closed_Coor:
+                        if threshhold(new_node[5][0], new_node[5][1]):
+                            checkTC(copy.deepcopy(popped_node), new_node)
+        #[RPM_2, 0]
         new_node = explore(copy.deepcopy(popped_node), actions[4][0], actions[4][1])
-        if ((new_node[5][0], new_node[5][1])) in map_points: 
-            if ((new_node[5][0], new_node[5][1])) not in obstacle_points:
-                if ((new_node[5][0], new_node[5][1])) not in Closed_Coor:
-                    if threshhold(new_node[5][0], new_node[5][1]):
-                        checkTC(copy.deepcopy(popped_node), new_node)
+        if new_node is not None:
+            if ((new_node[5][0], new_node[5][1])) in map_points:
+                if ((new_node[5][0], new_node[5][1])) not in obstacle_points:
+                    if ((new_node[5][0], new_node[5][1])) not in Closed_Coor:
+                        if threshhold(new_node[5][0], new_node[5][1]):
+                            checkTC(copy.deepcopy(popped_node), new_node)
+        #[0, RPM_2]
         new_node = explore(copy.deepcopy(popped_node), actions[5][0], actions[5][1])
-        if ((new_node[5][0], new_node[5][1])) in map_points: 
-            if ((new_node[5][0], new_node[5][1])) not in obstacle_points:
-                if ((new_node[5][0], new_node[5][1])) not in Closed_Coor:
-                    if threshhold(new_node[5][0], new_node[5][1]):
-                        checkTC(copy.deepcopy(popped_node), new_node)
+        if new_node is not None:
+            if ((new_node[5][0], new_node[5][1])) in map_points:
+                if ((new_node[5][0], new_node[5][1])) not in obstacle_points:
+                    if ((new_node[5][0], new_node[5][1])) not in Closed_Coor:
+                        if threshhold(new_node[5][0], new_node[5][1]):
+                            checkTC(copy.deepcopy(popped_node), new_node)
+        #[RPM_1, RPM_2]
         new_node = explore(copy.deepcopy(popped_node), actions[6][0], actions[6][1])
-        if ((new_node[5][0], new_node[5][1])) in map_points: 
-            if ((new_node[5][0], new_node[5][1])) not in obstacle_points:
-                if ((new_node[5][0], new_node[5][1])) not in Closed_Coor:
-                    if threshhold(new_node[5][0], new_node[5][1]):
-                        checkTC(copy.deepcopy(popped_node), new_node)
+        if new_node is not None:
+            if ((new_node[5][0], new_node[5][1])) in map_points:
+                if ((new_node[5][0], new_node[5][1])) not in obstacle_points:
+                    if ((new_node[5][0], new_node[5][1])) not in Closed_Coor:
+                        if threshhold(new_node[5][0], new_node[5][1]):
+                            checkTC(copy.deepcopy(popped_node), new_node)
+        #[RPM_2, RPM_1]
         new_node = explore(copy.deepcopy(popped_node), actions[7][0], actions[7][1])
-        if ((new_node[5][0], new_node[5][1])) in map_points: 
-            if ((new_node[5][0], new_node[5][1])) not in obstacle_points:
-                if ((new_node[5][0], new_node[5][1])) not in Closed_Coor:
-                    if threshhold(new_node[5][0], new_node[5][1]):
-                        checkTC(copy.deepcopy(popped_node), new_node)
+        if new_node is not None:
+            if ((new_node[5][0], new_node[5][1])) in map_points:
+                if ((new_node[5][0], new_node[5][1])) not in obstacle_points:
+                    if ((new_node[5][0], new_node[5][1])) not in Closed_Coor:
+                        if threshhold(new_node[5][0], new_node[5][1]):
+                            checkTC(copy.deepcopy(popped_node), new_node)
         # print("OpenList:", Open_List)
         return Open_List, Closed_Coor, Closed_List
     
@@ -306,7 +357,7 @@ def checkTC (on, n):
     for i, nodes in enumerate(Open_List): 
         if (nodes[5][0],nodes[5][1]) == (n[5][0],n[5][1]):
             if n[0] < nodes[0]:
-                new_node = (n[0], n[1], n[2], nodes[1], n[4], nodes[5], n[6])
+                new_node = (n[0], n[1], n[2], nodes[1], n[4], n[5], n[6])
                 Open_List[i] = new_node
                 hq.heapify(Open_List)
             return Open_List
@@ -342,9 +393,10 @@ def start_backtrack ():
     current_node = Closed_List[-1]
     path_nodes.append(current_node)
     path_coor.append((current_node['node_coor'][X], current_node['node_coor'][Y], current_node['node_coor'][THETA]))
+    path_vel.append((current_node['vel'][X], current_node['vel'][Y], current_node['vel'][THETA]))
     print("First node used:", current_node)
     
-# (TC, C2C, C2G, point_index, (x,y,theta)parent_coordinates, (x,y,theta)coordinates)
+# (TC, C2C, C2G, point_index, (x,y,theta)parent_coordinates, (x,y,theta)coordinates, vel(x,y,theta))
     while current_node["parent_coor"] is not None:
         search_value = current_node["parent_coor"]
         for node in Closed_List:
@@ -356,26 +408,41 @@ def start_backtrack ():
         path_coor.append((current_node['node_coor'][X], current_node['node_coor'][Y], current_node['node_coor'][THETA]))
         path_vel.append((current_node['vel'][X], current_node['vel'][Y], current_node['vel'][THETA]))
 
+    path_nodes.reverse()
     path_coor.reverse()
     path_vel.reverse()
+    # move(path_vel)
     run_visualization(path_coor)
 
+
+
 def move(path_vel): 
-    rospy.init_node('go.launch', anonymmous=False)
-
-    vel_pub = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
-
+    
     vel_msg = Twist()
+    if ROS == True:
+        rospy.init_node('turtlebot3_control')
+        vel_pub = rospy.Publisher('cmd_vel', Twist, queue_size=10)
+        print('starting movement!')
 
-    print('starting movement!')
+    rate = rospy.Rate(.7825)
 
+    counter = 0
     for i in path_vel:
         vel_msg.linear.x = math.sqrt(i[0]**2 + i[1]**2)
-        vel_msg.angular.z = i[2]
-        print("current Vel:", i)
+        vel_msg.angular.z = (-1*i[2])
+        
+        print("[",counter,"]")
+        counter+=1
+        print(vel_msg)
+        print()
+        if ROS == True:
+            vel_pub.publish(vel_msg)
+            rate.sleep()
+    
+    vel_msg.linear.x = 0
+    vel_msg.angular.z = 0
+    if ROS == True:
         vel_pub.publish(vel_msg)
-        rospy.sleep(1)
-
 
 # runs visulization of path plan using OpenCV.
 # path shown is the solution path, with the connected nodes from the open list
@@ -401,66 +468,66 @@ def run_visualization(path_coordinates):
 def plot_curve(node, UL,UR, map, color):
     t = 0
     D=0   
-    #dt = 0.1
     Xn=node[X]
     Yn=node[Y]
-    Thetan = 3.14 * node[THETA] / 180
+    Thetan = deg2rad(node[THETA])
 
     # Xi, Yi,Thetai: Input point's coordinates
     # Xs, Ys: Start point coordinates for plot function
     # Xn, Yn, Thetan: End point coordintes
     while t<1:
-        t = t + dt
         Xs = Xn
         Ys = Yn
-        Xn += round(0.5*r * (UL + UR) * math.cos(Thetan) * dt)
-        Yn += round(0.5*r * (UL + UR) * math.sin(Thetan) * dt)
-        Thetan += (r / L) * (UR - UL) * dt
-        __draw_line((Xs*SCALE_FACTOR, Ys*SCALE_FACTOR), (Xn*SCALE_FACTOR, Yn*SCALE_FACTOR), map, GRAY)
+        Thetan += (r / L) * (UR - UL) * dt * 2 * math.pi/60
+        Xn += round((0.5*r * (UL + UR) * math.cos(Thetan) * dt)*2)/20
+        Yn += round((0.5*r * (UL + UR) * math.sin(Thetan) * dt)*2)/20
+        t = t + dt 
+        __draw_line((Xs*SCALE_FACTOR, Ys*SCALE_FACTOR), (Xn*SCALE_FACTOR, Yn*SCALE_FACTOR), map, color)
     Xn = Xn
     Yn = Yn
 
 
 if __name__ == '__main__':
 
-    DEBUG = True
+    DEBUG = False
+    ROS = False
 
     # user input required to fill out the following
     if DEBUG == False:
-        start_x_position = int(input("enter start X position(0-600): "))
-        start_y_position = int(input("enter start Y position(0-250): "))
+        start_x_position = int(input("enter start X position(20-580): "))
+        start_y_position = int(input("enter start Y position(20-180): "))
         start_theta_position = int(input("enter start theta position(0-360): "))
         print()
-        goal_x_position = int(input("enter goal X position(0-600): "))
-        goal_y_position = int(input("enter goal y position(0-250): "))
-        print()
-        RPM_1 = int(input("enter RPM for wheel rotation speed 1 (0-100): "))
-        RPM_2 = int(input("enter RPM for wheel rotation speed 2 (0-100): "))
-        print()
-        step_size = int(input("enter step size (0-10): "))
-        clearance = int(input("enter the clearance used for navigation (in mm): "))
+        goal_x_position = int(input("enter goal X position(20-580): "))
+        goal_y_position = int(input("enter goal y position(20-180): "))
+        RPM_1 = 10        # (rot/s)
+        RPM_2 = 20         # (rot/s)
+        r = 3.3           # (cm)
+        L = 12            # (cm)
+        dt = 0.1
+        clearance = 10
         ROBOT_SIZE_SCALED = ROBOT_SIZE + clearance * SCALE_FACTOR
     else:
         start_x_position  = 50
         start_y_position  = 100
         start_theta_position  = 0
-        goal_x_position  = 550
-        goal_y_position  = 100
-        RPM_1 = 2
-        RPM_2 = 5 
-        r = 3.3
-        L = 16
-        dt = 0.25
+        goal_x_position  = 530
+        goal_y_position  = 180
+        RPM_1 = 10        # (rot/s)
+        RPM_2 = 20         # (rot/s)
+        r = 3.3           # (cm)
+        L = 12            # (cm)
+        dt = 0.1
         # step_size = 1
         # ROBOT_SIZE = 5  # (mm) 105 is the size if the robot in mm.  Will not work for this simulation
-        clearance = 12
+        clearance = 10
         ROBOT_SIZE_SCALED = ROBOT_SIZE_SCALED + clearance * SCALE_FACTOR
-        
+
+    # 0 = left   1 = right    
     actions = [[RPM_1, RPM_1], [RPM_1, 0], [0, RPM_1], [RPM_2, RPM_2], [RPM_2, 0], [0, RPM_2], [RPM_1, RPM_2], [RPM_2, RPM_1]]
 
     start_position = (start_x_position, start_y_position, start_theta_position)
     goal_position = (goal_x_position, goal_y_position)
-
 
     # initial values for the start node
     vel1 = (0, 0, 0)

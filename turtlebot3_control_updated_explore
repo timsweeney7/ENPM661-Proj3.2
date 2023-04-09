@@ -222,8 +222,8 @@ def explore(n,UL,UR):
     # Xn, Yn, Thetan: End point coordintes
     while t<1:
         Thetan += (r / L) * (UR - UL) * dt
-        Xn += 0.5*r * (UL + UR) * math.cos(Thetan) * dt
-        Yn += 0.5*r * (UL + UR) * math.sin(Thetan) * dt
+        Xn += round((0.5*r * (UL + UR) * math.cos(Thetan) * dt)*2)/2
+        Yn += round((0.5*r * (UL + UR) * math.sin(Thetan) * dt)*2)/2
         t = t + dt 
         temp_point = (Xn, Yn)
         if temp_point in obstacle_points: 

@@ -424,7 +424,7 @@ def move(path_vel):
         vel_pub = rospy.Publisher('cmd_vel', Twist, queue_size=10)
         print('starting movement!')
 
-    rate = rospy.Rate(.7825)
+    rate = rospy.Rate(.775)
 
     counter = 0
     for i in path_vel:

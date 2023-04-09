@@ -48,8 +48,8 @@ To run the python script for part one:
 		directory ID: narmouq7
 		UID: 115405011
 	Timothy Sweeny
-		directory ID:
-		UID: 
+		directory ID:tsweene1
+		UID: 119359051
 		
 #GitHub link: 
 	https://github.com/timsweeney7/ENPM661-Proj3.2.git
